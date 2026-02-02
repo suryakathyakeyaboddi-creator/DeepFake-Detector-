@@ -1,7 +1,10 @@
 from sqlmodel import SQLModel, create_engine, Session
 from models import DetectionLog
 
-sqlite_file_name = "database.db"
+import os
+
+# Use /tmp for database on Vercel (read-only filesystem elsewhere) or local path
+sqlite_file_name = "/tmp/database.db" if os.environ.get("VERCEL") else "database.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
 connect_args = {"check_same_thread": False}
