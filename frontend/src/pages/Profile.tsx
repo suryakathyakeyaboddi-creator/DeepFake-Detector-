@@ -13,7 +13,7 @@ export default function Profile() {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        supabase.auth.getUser().then(({ data: { user } }) => {
+        supabase.auth.getUser().then(({ data: { user } }: { data: { user: any } }) => {
             if (!user) {
                 navigate('/login');
             } else {
