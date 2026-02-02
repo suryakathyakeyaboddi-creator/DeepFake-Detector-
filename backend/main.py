@@ -41,12 +41,12 @@ class UserLogin(BaseModel):
 def on_startup():
     create_db_and_tables()
 
-@app.get("/")
+@app.get("/api/")
 def read_root():
     return {"message": "Deepfake Detector API is running"}
 
-@app.post("/auth/register")
-def register(user_data: UserCreate, session: Session = Depends(get_session)):
+@app.post("/api/auth/register")
+async def register(user_data: UserCreate, session: Session = Depends(get_session)):
     # Check if user exists
     statement = select(User).where(User.email == user_data.email)
     existing_user = session.exec(statement).first()
@@ -61,7 +61,7 @@ def register(user_data: UserCreate, session: Session = Depends(get_session)):
     session.refresh(new_user)
     return {"message": "User created successfully", "user_id": new_user.id}
 
-@app.post("/auth/login")
+@app.post("/api/auth/login")
 def login(user_data: UserLogin, session: Session = Depends(get_session)):
     statement = select(User).where(User.email == user_data.email)
     user = session.exec(statement).first()
@@ -71,13 +71,13 @@ def login(user_data: UserLogin, session: Session = Depends(get_session)):
     
     return {"message": "Login successful", "user_id": user.id, "email": user.email}
 
-@app.get("/users")
+@app.get("/api/users")
 def get_users(session: Session = Depends(get_session)):
     # Helper to see users (Dev Only)
     users = session.exec(select(User)).all()
     return [{"id": u.id, "email": u.email, "created_at": u.created_at} for u in users]
 
-@app.post("/detect")
+@app.post("/api/detect")
 async def detect_image(file: UploadFile = File(...), session: Session = Depends(get_session)):
     """
     Receive uploaded image, save as temp file, and call Gradio service for prediction.

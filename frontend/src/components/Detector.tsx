@@ -105,10 +105,20 @@ export default function Detector() {
         formData.append('file', file)
 
         try {
-            const response = await fetch('http://localhost:8000/detect', {
+
+
+            // Determine backend URL
+            // If running on Vite default port (5173), assume local backend on port 8000.
+            // Otherwise (Production/Vercel), use relative path to same domain.
+            const isDev = window.location.port === '5173';
+            const apiBase = isDev ? `http://${window.location.hostname}:8000` : '';
+            const endpoint = `${apiBase}/api/detect`;
+
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 body: formData,
             })
+
 
             if (!response.ok) {
                 throw new Error(`Error: ${response.statusText}`)
