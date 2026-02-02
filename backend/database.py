@@ -4,7 +4,12 @@ from models import DetectionLog
 import os
 
 # Use /tmp for database on Vercel (read-only filesystem elsewhere) or local path
-sqlite_file_name = "/tmp/database.db" if os.environ.get("VERCEL") else "database.db"
+# We check for VERCEL or just use /tmp if not local
+if os.environ.get("VERCEL"):
+    sqlite_file_name = "/tmp/database.db" 
+else:
+    sqlite_file_name = "database.db"
+
 sqlite_url = f"sqlite:///{sqlite_file_name}"
 
 connect_args = {"check_same_thread": False}
