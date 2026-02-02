@@ -18,6 +18,7 @@ app = FastAPI(title="Deepfake Detector API")
 origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "*", # Allow all origins for Vercel deployment (or add specific Vercel URL)
 ]
 
 app.add_middleware(
