@@ -101,33 +101,27 @@ export default function Detector() {
         setLoading(true)
         setError(null)
 
-        const formData = new FormData()
-        formData.append('file', file)
-
         try {
+            // Import dynamically to avoid SSR issues if any, or just standard import is fine in Vite
+            const { Client } = await import("@gradio/client");
 
+            // Connect to the HF Space
+            const client = await Client.connect("SuryaKathyakeyaBoddi/deepfake-detector");
 
-            // Determine backend URL
-            // If running on Vite default port (5173), assume local backend on port 8000.
-            // Otherwise (Production/Vercel), use relative path to same domain.
-            const isDev = window.location.port === '5173';
-            const apiBase = isDev ? `http://${window.location.hostname}:8000` : '';
-            const endpoint = `${apiBase}/api/detect`;
+            // Predict
+            const result = await client.predict("/predict", {
+                image: file,
+            }) as any;
 
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                body: formData,
-            })
+            console.log("Prediction result:", result);
 
+            // The result structure from Gradio Client is usually { data: [...] }
+            // We set the result state to this data
+            setResult(result.data)
 
-            if (!response.ok) {
-                throw new Error(`Error: ${response.statusText}`)
-            }
-
-            const data = await response.json()
-            setResult(data)
         } catch (err: any) {
-            setError(err.message || "Something went wrong")
+            console.error("Error calling Gradio:", err);
+            setError(err.message || "Something went wrong with the AI service")
         } finally {
             setLoading(false)
         }
@@ -136,7 +130,20 @@ export default function Detector() {
     const renderResult = () => {
         if (!result) return null
 
-        let predObj = result.prediction
+        // result is now likely the data array from Gradio: e.g. [{ label: "Real", confidences: [...] }] or a JSON string
+        // The user's python service seemed to return a dict. Gradio usually returns the output components.
+        // Assuming the output is a Label component, result might be an object or array containing the label and confidences.
+
+        // Let's inspect the data structure based on the previous hf_service.py usage.
+        // The previous backend returned `service.predict(tmp_path)`.
+        // So `result` here (which is `result.data`) should be exactly what `service.predict` returned.
+
+        // Usually Gradio `predict` returns { data: [output1, output2...] }.
+        // So `result` (from setResult(result.data)) is [output1].
+
+        let predObj = result[0] || result;
+
+        // If it's a string JSON (sometimes happens with API), parse it.
         if (typeof predObj === 'string') {
             try { predObj = JSON.parse(predObj) } catch (e) { }
         }
@@ -147,6 +154,8 @@ export default function Detector() {
         let label = "Unknown"
 
         if (predObj && typeof predObj === 'object') {
+            // Handle standard Gradio Label output: { label: "Real", confidences: [{label:"Real", confidence:0.9}, ...] }
+            // OR key-value pairs if it's a JSON output
             if ('Prediction' in predObj) {
                 label = predObj['Prediction']
                 confidenceReal = predObj['Real Confidence'] || 0
